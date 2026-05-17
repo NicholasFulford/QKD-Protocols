@@ -45,15 +45,10 @@ class Alice:
         circuits = []
         for bit, basis in zip(self.bits, self.bases):
             circuit = QuantumCircuit(1, 1)
-            if basis == 0:  # Z basis
-                if bit == 1:
-                    circuit.x(0)  # Prepare |1>
-            else:  # X basis
-                if bit == 0:
-                    circuit.h(0)  # Prepare |+>
-                else:
-                    circuit.x(0)
-                    circuit.h(0)  # Prepare |->
+            if bit == 1:
+                circuit.x(0)  # Encode bit value
+            if basis == 1:
+                circuit.h(0)  # Rotate to correct basis
             circuits.append(circuit)
         return circuits
 
