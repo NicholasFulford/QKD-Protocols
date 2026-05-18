@@ -76,7 +76,7 @@ class Bob:
         results = job.result()
         
         return np.array([
-            int(list(res.get_counts().keys())[0])
+            int(list(res.keys())[0])
             for res in results.get_counts()])
 
 def sift_indices(alice, bob):
