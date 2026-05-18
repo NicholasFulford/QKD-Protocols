@@ -13,6 +13,7 @@ class BB84Results:
     sifted_indices: np.ndarray
     sample_indices: np.ndarray
     qber: float
+    num_sampled_bits: int
     alice_key_final: np.ndarray
     bob_key_final: np.ndarray
     key_length: int
@@ -129,6 +130,7 @@ def run_bb84(num_bits, channel, sample_qber_fraction, rng):
         sifted_indices=sifted_indices,
         sample_indices=sample_indices,
         qber=qber,
+        num_sampled_bits=len(sample_indices),
         alice_key_final=alice_key_final,
         bob_key_final=bob_key_final,
         key_length=key_length,
