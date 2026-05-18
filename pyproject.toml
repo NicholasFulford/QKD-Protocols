@@ -1,0 +1,18 @@
+[build-system]
+requires      = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name            = "qkdcode"
+version         = "0.1.0"
+description     = "BB84 QKD protocol implementations with Qiskit"
+readme          = "README.md"
+authors         = [{ name = "NicholasFulford", email = "nhgfulford@gmail.com" }]
+requires-python = ">=3.14"
+
+[project.urls]
+Repository = "https://github.com/NicholasFulford/QKD-Protocols"
+
+[tool.setuptools.packages.find]
+where   = ["."]
+include = ["qkdcode*"]
