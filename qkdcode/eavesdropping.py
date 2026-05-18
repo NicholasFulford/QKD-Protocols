@@ -90,7 +90,7 @@ class BreidbartEve(EveAttack):
 
     For each intercepted qubit, Eve:
         1. Measures in the Breidbart basis (22.5° rotated clockwise from Z).
-        2. Re-encodes her bit guess in the Z basis.
+        2. Re-encodes her bit guess in the Breidbart basis.
         3. Forwards the re-encoded qubit to Bob.
 
     Breidbart basis states:
@@ -103,7 +103,7 @@ class BreidbartEve(EveAttack):
 
     If Eve measures |b0⟩, she guesses bit 0. If she measures |b1⟩, she guesses bit 1. 
     This is beacause |b0⟩ has greater overlap with the states encoding bit 0 (|0⟩ and |+⟩), while |b1⟩ has greater overlap with the states encoding bit 1 (|1⟩ and |-⟩).
-    She then re-encodes the qubit in the Z basis according to her guess and forwards it to Bob.
+    She then re-encodes the qubit in the Breidbart basis according to her guess and forwards it to Bob.
 
     """
 
@@ -123,10 +123,11 @@ class BreidbartEve(EveAttack):
             eve_measurements[i] = measurement
             eve_bits[i] = measurement  
 
-            # Re-encode the qubit in Z basis according to measurement
+            # Re-encode the qubit in Breidbart basis according to measurement
             qc_resend = QuantumCircuit(1, 1)
             if measurement == 1:
                 qc_resend.x(0)  # Prepare same bit that Eve measured
+            qc_resend.ry(np.pi/4, 0)  # Rotate to Breidbart basis
             resend_qubits.append(qc_resend)
 
         self.attack_record = BB84AttackRecord(
