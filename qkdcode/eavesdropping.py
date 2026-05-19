@@ -102,7 +102,7 @@ class BreidbartEve(EveAttack):
         Ry(-pi/4)|b1> = |1> 
 
     If Eve measures |b0⟩, she guesses bit 0. If she measures |b1⟩, she guesses bit 1. 
-    This is beacause |b0⟩ has greater overlap with the states encoding bit 0 (|0⟩ and |+⟩), while |b1⟩ has greater overlap with the states encoding bit 1 (|1⟩ and |-⟩).
+    This is because |b0⟩ has greater overlap with the states encoding bit 0 (|0⟩ and |+⟩), while |b1⟩ has greater overlap with the states encoding bit 1 (|1⟩ and |-⟩).
     She then re-encodes the qubit in the Breidbart basis according to her guess and forwards it to Bob.
 
     """
@@ -115,7 +115,7 @@ class BreidbartEve(EveAttack):
 
         for i, qc in enumerate(circuits):
             qc_eve = qc.copy()
-            qc_eve.ry(-np.pi/4, 0)  # Rotate to Breidbart basis
+            qc_eve.ry(-np.pi/4, 0)  # Rotate to Z basis
             qc_eve.measure(0, 0)
             job = self.simulator.run(qc_eve, shots=1)
             result = job.result()

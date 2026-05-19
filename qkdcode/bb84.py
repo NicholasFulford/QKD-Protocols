@@ -89,7 +89,7 @@ def estimate_qber(alice_key, bob_key, sample_fraction, rng):
     n = len(alice_key)
     sample_size = max(1, int(sample_fraction * n))
     sample_indices = rng.choice(n, size=sample_size, replace=False)
-    qber = np.mean(alice_key[sample_indices] != bob_key[sample_indices])
+    qber = qber = sum([1 for x, y in zip(alice_key[sample_indices], bob_key[sample_indices]) if x != y]) / len(alice_key[sample_indices])
     return float(qber), sample_indices
    
 def run_bb84(num_bits, channel, sample_qber_fraction, rng):

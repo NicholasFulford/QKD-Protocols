@@ -1,6 +1,5 @@
 from qiskit_aer import AerSimulator
 from qiskit_aer.noise import NoiseModel, depolarizing_error, phase_damping_error, amplitude_damping_error
-from qiskit_aer.primitives import SamplerV2 as Sampler
 from qiskit import transpile
 
 """
