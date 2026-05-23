@@ -66,7 +66,7 @@ class QuantumChannel:
 
     def __init__(self, noise_model=None, seed=42):
         self.noise_model = noise_model
-        self.simulator = AerSimulator(noise_model=noise_model, seed_simulator=seed)
+        self.simulator = AerSimulator()
     
     def transmit(self, circuits):
         """
@@ -81,7 +81,7 @@ class QuantumChannel:
         is applied at execution time.
         
         """
-        return [transpile(qc, self.simulator) for qc in circuits]
+        return circuits
     
     @property
     def is_noiseless(self):

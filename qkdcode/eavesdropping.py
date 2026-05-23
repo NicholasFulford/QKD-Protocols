@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import numpy as np
 from qiskit import QuantumCircuit
-from qiskit_aer import AerSimulator
+from qiskit.transpiler import generate_preset_pass_manager
+from qiskit_aer.primitives import SamplerV2 as Sampler
 from qkdcode.channel import QuantumChannel
 
 @dataclass
@@ -54,28 +55,30 @@ class RandomInterceptResendEve(EveAttack):
         num_qubits = len(circuits)
         eve_bases = self.rng.integers(0, 2, size=num_qubits)  # Z=0, X=1
         eve_measurements = np.zeros(num_qubits, dtype=int)
-        eve_bits = np.zeros(num_qubits, dtype=int)
         resend_qubits = []
-
+        pm = generate_preset_pass_manager(3, self.simulator)
+        sampler = Sampler(options=dict(backend_options=dict(noise_model=self.noise_model)))
         for i, qc in enumerate(circuits):
             qc_eve = qc.copy()
             if eve_bases[i] == 1:  # X basis
                 qc_eve.h(0)
             qc_eve.measure(0, 0)
-            job = self.simulator.run(qc_eve, shots=1)
-            result = job.result()
-            measurement = int(list(result.get_counts().keys())[0])
-            eve_measurements[i] = measurement
-            eve_bits[i] = measurement  # In this simple attack, Eve's bit guess is the same as her measurement
-
+            isa_qc_eve = pm.run(qc_eve)
+            job = sampler.run([(isa_qc_eve, None, 1)])
+            eve_result = job.result()[0].data.c.get_counts()
+            eve_measurement = int(list(eve_result.keys())[0])
+            eve_measurements[i] = eve_measurement
+            
             # Re-encode the qubit based on Eve's measurement
             qc_resend = QuantumCircuit(1, 1)
-            if measurement == 1:
+            if eve_measurement == 1:
                 qc_resend.x(0)  # Prepare same bit that Eve measured
             if eve_bases[i] == 1:  # Encode in same basis that Eve measured
                 qc_resend.h(0)
             resend_qubits.append(qc_resend)
 
+        eve_bits = eve_measurements  #Eve's bit guess is the same as her measurement outcome
+        
         self.attack_record = BB84AttackRecord(
             eve_measurements=eve_measurements,
             eve_bits=eve_bits,
@@ -110,25 +113,27 @@ class BreidbartEve(EveAttack):
     def transmit(self, circuits):   
         num_qubits = len(circuits)
         eve_measurements = np.zeros(num_qubits, dtype=int)
-        eve_bits = np.zeros(num_qubits, dtype=int)
         resend_qubits = []
-
+        pm = generate_preset_pass_manager(3, self.simulator)
+        sampler = Sampler(options=dict(backend_options=dict(noise_model=self.noise_model)))
         for i, qc in enumerate(circuits):
             qc_eve = qc.copy()
             qc_eve.ry(-np.pi/4, 0)  # Rotate to Z basis
             qc_eve.measure(0, 0)
-            job = self.simulator.run(qc_eve, shots=1)
-            result = job.result()
-            measurement = int(list(result.get_counts().keys())[0])
-            eve_measurements[i] = measurement
-            eve_bits[i] = measurement  
+            isa_qc_eve = pm.run(qc_eve)
+            job = sampler.run([(isa_qc_eve, None, 1)])
+            eve_result = job.result()[0].data.c.get_counts()
+            eve_measurement = int(list(eve_result.keys())[0])
+            eve_measurements[i] = eve_measurement
 
             # Re-encode the qubit in Breidbart basis according to measurement
             qc_resend = QuantumCircuit(1, 1)
-            if measurement == 1:
+            if eve_measurement == 1:
                 qc_resend.x(0)  # Prepare same bit that Eve measured
-            qc_resend.ry(np.pi/4, 0)  # Rotate to Breidbart basis
+            qc_resend.ry(np.pi/4, 0)  # Rotate to Breidbart basis        
             resend_qubits.append(qc_resend)
+
+        eve_bits = eve_measurements  #Eve's bit guess is the same as her measurement outcome
 
         self.attack_record = BB84AttackRecord(
             eve_measurements=eve_measurements,
@@ -138,7 +143,7 @@ class BreidbartEve(EveAttack):
 
         return resend_qubits
     
-def compare_bb84_attacks(alice_bits, Random_attackrecord, Breidbart_attackrecord):
+def compare_bb84_attacks(Random_attack_alice_bits, Breidbart_attack_alice_bits, Random_attackrecord, Breidbart_attackrecord):
     """
     Compare and return metrics for two different eavesdropping attacks on the BB84 protocol,
     Takes the results of two attack records run on the same alice_bits and returns a dict of metrics for use in the analysis notebook.
@@ -151,7 +156,7 @@ def compare_bb84_attacks(alice_bits, Random_attackrecord, Breidbart_attackrecord
 
     """
 
-    def p_correct(attack_record):
+    def p_correct(alice_bits, attack_record):
         return np.mean(alice_bits == attack_record.eve_bits)
 
     def mutual_info(p):
@@ -159,8 +164,8 @@ def compare_bb84_attacks(alice_bits, Random_attackrecord, Breidbart_attackrecord
             return 0.0
         return 1 - (-p * np.log2(p) - (1 - p) * np.log2(1 - p)) 
     
-    p_random = p_correct(Random_attackrecord)
-    p_breidbart = p_correct(Breidbart_attackrecord)
+    p_random = p_correct(Random_attack_alice_bits, Random_attackrecord)
+    p_breidbart = p_correct(Breidbart_attack_alice_bits, Breidbart_attackrecord)
 
     return {
         'random_p_correct': p_random,

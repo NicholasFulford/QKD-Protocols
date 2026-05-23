@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
 from qiskit import QuantumCircuit
+from qiskit.transpiler import generate_preset_pass_manager
 from qiskit_aer.primitives import SamplerV2 as Sampler
 
 @dataclass
@@ -65,20 +66,20 @@ class Bob:
     
     def measure_qubits(self, circuits, channel):
         """Bob measures the received qubits in his randomly chosen bases using the specified channel."""
-        measurements = []
+        bob_measurements = []
+        pm = generate_preset_pass_manager(3, channel.simulator)
+        sampler = Sampler(options=dict(backend_options=dict(noise_model=channel.noise_model)))
         for qc, basis in zip(circuits, self.bases):
             qc_bob = qc.copy()
             if basis == 1:  # X basis
                 qc_bob.h(0)  # Rotate to X basis before measurement
             qc_bob.measure(0, 0)
-            measurements.append(qc_bob)
-
-        job = channel.simulator.run(measurements, shots=1)
-        results = job.result()
-        
-        return np.array([
-            int(list(res.keys())[0])
-            for res in results.get_counts()])
+            isa_qc_bob = pm.run(qc_bob)
+            job = sampler.run([(isa_qc_bob, None, 1)])
+            bob_result = job.result()[0].data.c.get_counts()
+            bob_measurement = int(list(bob_result.keys())[0])
+            bob_measurements.append(bob_measurement)
+        return np.array(bob_measurements)
 
 def sift_indices(alice, bob):
     """Alice and Bob compare bases."""
@@ -89,7 +90,7 @@ def estimate_qber(alice_key, bob_key, sample_fraction, rng):
     n = len(alice_key)
     sample_size = max(1, int(sample_fraction * n))
     sample_indices = rng.choice(n, size=sample_size, replace=False)
-    qber = qber = sum([1 for x, y in zip(alice_key[sample_indices], bob_key[sample_indices]) if x != y]) / len(alice_key[sample_indices])
+    qber = np.mean(alice_key[sample_indices] != bob_key[sample_indices])
     return float(qber), sample_indices
    
 def run_bb84(num_bits, channel, sample_qber_fraction, rng):
