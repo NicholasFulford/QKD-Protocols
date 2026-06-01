@@ -12,9 +12,9 @@ class BB84AttackRecord:
     Data class to hold details of an eavesdropping attack on the BB84 protocol.
     
     """
-    eve_measurements: np.ndarray
     eve_bits: np.ndarray
     attack_type: str
+
 
 class EveAttack(QuantumChannel, ABC):
     """
@@ -80,7 +80,6 @@ class RandomInterceptResendEve(EveAttack):
         eve_bits = eve_measurements  #Eve's bit guess is the same as her measurement outcome
         
         self.attack_record = BB84AttackRecord(
-            eve_measurements=eve_measurements,
             eve_bits=eve_bits,
             attack_type="Random Intercept-Resend"
         )
@@ -136,43 +135,9 @@ class BreidbartEve(EveAttack):
         eve_bits = eve_measurements  #Eve's bit guess is the same as her measurement outcome
 
         self.attack_record = BB84AttackRecord(
-            eve_measurements=eve_measurements,
             eve_bits=eve_bits,
             attack_type= "Breidbart Intercept-Resend"
         )
 
         return resend_qubits
-    
-def compare_bb84_attacks(Random_attack_alice_bits, Breidbart_attack_alice_bits, Random_attackrecord, Breidbart_attackrecord):
-    """
-    Compare and return metrics for two different eavesdropping attacks on the BB84 protocol,
-    Takes the results of two attack records run on the same alice_bits and returns a dict of metrics for use in the analysis notebook.
 
-    Returns a dictionary with the following keys:
-    - random_p_correct     : empirical P(Eve correct) for random attack
-    - breidbart_p_correct. : empirical P(Eve correct) for Breidbart attack
-    - random_mutual_info   : empirical mutual information (bits)
-    - breidbart_mutual_info: empirical mutual information (bits)  
-
-    """
-
-    def p_correct(alice_bits, attack_record):
-        return np.mean(alice_bits == attack_record.eve_bits)
-
-    def mutual_info(p):
-        if p == 0 or p == 1:
-            return 0.0
-        return 1 - (-p * np.log2(p) - (1 - p) * np.log2(1 - p)) 
-    
-    p_random = p_correct(Random_attack_alice_bits, Random_attackrecord)
-    p_breidbart = p_correct(Breidbart_attack_alice_bits, Breidbart_attackrecord)
-
-    return {
-        'random_p_correct': p_random,
-        'breidbart_p_correct': p_breidbart,
-        'random_mutual_info': mutual_info(p_random),
-        'breidbart_mutual_info': mutual_info(p_breidbart)
-    }       
-
-
-    
